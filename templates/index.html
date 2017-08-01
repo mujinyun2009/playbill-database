@@ -1,29 +1,41 @@
 <html>
     <head>
-        <script src="http://159.203.127.128:5000/main"></script>
-		<link rel="stylesheet" type="text/css" href="http://159.203.127.128:5000/style">
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js'></script>
+        <script src="/main.js"></script>
+        <script src="/functions.js"></script>
+		<link rel="stylesheet" type="text/css" href="/style.css">
+    <title>Home</title>
     </head>
     <body>
 		<div id="wrapper">
+            <div id = "navbar">
+                <ul>
+                    <li><a class="nav-link current" href="/home">Home</a></li>
+                    <li><a class="nav-link" href="/search">Search</a></li>
+                    <li><a class="nav-link login" href="/login">Login</a></li>
+                </ul>
+            <div>
             <div id="side-window-container" class="side-window">
                 <div id="help-window" class="side-window">
                     <h4>Field Information</h4>
-                    <div id="help-window-text"></div>
+                </div>
+                <div id="help-window-text"></div>
+                <div id="status-message-window" class="side-window"></div>
+                <div id="reset-form-button" class="side-window ui-element"><input type="button" value="Reset Form" /></div>
+                <div id="reset-after-post" class="side-window ui-element"><input type="button" /></div>
+                <div id="upload-file-window" class="side-window"><h4>Upload a local record</h4>
+                    <div class="ui-element"><input type="file" id="local-load" /></div>
                 </div>
                 <div id="save-file-window" class="side-window"><h4>Save current record</h4>
-                    <div class="ui-element"><input type="button" id="playbill-submit" value="Save JSON" /></div>
+                    <div class="ui-element"><input type="button" id="playbill-submit" value="Save to database" /></div>
+                    <div class="ui-element"><input type="button" id="playbill-save" value="Save to local file" /></div>
                 </div>
-                <div id="load-file-window" class="side-window"><h4>Load a record</h4>
-                    <div class="ui-element"><input type="file" id="playbill-load" /></div>
-        <!--    <form>
                 <div id="load-file-window" class="side-window"><h4>Load a record by ID</h4>
-                    <div class="ui-element"><input type="text" id="playbill-load-label" /></div>
-                    <div class="ui-element"><input type="button" id="playbill-load" value="Load JSON" /></div>
-                </div>
-            </form> -->
+                    <div class="ui-element"><input type="search" id="playbill-id" /></div>
+                    <div class="ui-element"><input type="button" id="playbill-load" value="Load" /></div>
                 </div>
             </div>
-                <div id="playbill-form"></div>
+            <div id="playbill-form"></div>
 		</div>
     </body>
 </html>

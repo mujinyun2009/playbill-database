@@ -1,86 +1,13 @@
-document.addEventListener('DOMContentLoaded', function main() {
-
+document.addEventListener('DOMContentLoaded', function main () {
     //////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////
     // Schema
     //
+
     var req = new XMLHttpRequest();
-    req.open("GET", "http://159.203.127.128:5000/schema.json", false);
+    req.open("GET", "/schema.json", false);
     req.send();
     var playbillRecord = JSON.parse(req.responseText);
-
-
-    //////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////
-    // Utilities for string manipulation, etc.
-    //
-
-    function insertSpace(match, val) {
-        return val + ' ';
-    }
-
-    function upperCase(match, val) {
-        return val.toUpperCase();
-    }
-
-    function splitCamel(s) {
-        return s.replace(/([a-z](?=[A-Z]))/g, insertSpace)  // Split CamelCase
-                .replace(/([a-z](?=[0-9]))/g, insertSpace)  // Separate Digits
-                .replace(/([0-9](?=[a-zA-Z]))/g, insertSpace);   // (ditto)
-    }
-
-    function titleCase(s) {
-        s = splitCamel(s);
-        return s.replace(/(^[a-z])/g, s[0].toUpperCase())   // First Cap
-                .replace(/( [a-z])/g, upperCase);           // Cap After Space
-    }
-
-    function toId(s, prefix) {
-        s = splitCamel(s);
-        prefix = prefix ? s ? prefix + '_' : prefix : '';
-        return prefix + s.replace(/(\s)/g, '-').toLowerCase();
-    }
-
-    function idToList(keys) {
-        // Take id keys in the form "yabba-dabba_doo" and convert them to
-        // a list of keys in the form `['yabbaDabba', 'doo']`.
-        if (typeof keys === 'string') {
-            keys = keys.split('_');
-            for (var i = 0; i < keys.length; i++) {
-                var key = keys[i].split('-');
-                for (j = 0; j < key.length; j++) {
-                    key[j] = key[j][0].toUpperCase() + key[j].slice(1);
-                }
-                key = key.join('');
-                keys[i] = key[0].toLowerCase() + key.slice(1);
-            }
-        }
-        return keys;
-    }
-
-    function listToId(keyList) {
-        // Take a list of keys in the form `['yabbaDabba', 'doo']` and
-        // convert them to id keys in the form "yabba-dabba_doo".
-        var ids = keyList.map(function (i) { return toId('' + i); });
-        return ids.join('_');
-    }
-
-    function singular(s) {
-        return s.replace(/(s$)/g, '');
-    }
-
-    function stripNum(s) {
-        return s.replace(/([0-9]+\s*$)/g, '');
-    }
-
-    function isPrimitive(val) {
-        var vtype = typeof val;
-        return (vtype === 'string') ||
-               (vtype === 'number') ||
-               (vtype === 'boolean') ||
-               (val === null) ||
-               (val === undefined);
-    }
 
     //////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////
@@ -134,15 +61,15 @@ document.addEventListener('DOMContentLoaded', function main() {
             inputEl = document.createElement('textarea');
             inputEl.setAttribute('cols', '40');
             inputEl.setAttribute('rows', '4');
-        }   else if (attribs.formType === "select") {
+        }     else if (attribs.formType === "select") {
             inputEl = document.createElement('select');
-            inputEl.setAttribute('style', 'background-color: #FFF; width: 333px; height: 22px;');
+            inputEl.setAttribute('style', 'background-color: #FFF; height: 22px;');
             for (var i = 0; i < attribs.allowed.length; i++) {
                 var option = document.createElement('option');
                 option.text = attribs.allowed[i];
                 inputEl.add(option);
             }
-        }   else {
+        }     else {
             inputEl = document.createElement('input');
             inputEl.setAttribute('size', '40');
             inputEl.setAttribute('type', attribs.formType || 'text');
@@ -286,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function main() {
             var subForm = formSpec[key];
             if (formSpec.type == 'list') {
                                             // The new item renderer will
-                key = '';                   // handle keys for sequences.
+                key = '';                     // handle keys for sequences.
             }
 
             var subHeader = header ? header : titleCase(key);
@@ -308,8 +235,8 @@ document.addEventListener('DOMContentLoaded', function main() {
             } else {
                 renderHeader(root, subHeader, {'class': 'instance-header'});
                 render(renderSubRoot(root, nodeId),
-                       subForm,
-                       nodeId);
+                         subForm,
+                         nodeId);
             }
         }
     }
@@ -322,6 +249,8 @@ document.addEventListener('DOMContentLoaded', function main() {
         render(formRoot, playbillRecord);
         focusTop();
     }
+
+
 
     //////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////
@@ -407,33 +336,80 @@ document.addEventListener('DOMContentLoaded', function main() {
         }
     }
 
+
+    //////////////////// Reset form button //////////////////////////
+    var reset = document.getElementById("reset-form-button");
+    var statusAlert = document.getElementById('status-message-window');
+    reset.addEventListener('click', function(){
+      if (confirm("Are you sure you want to reset the form?")) {
+        resetForm();
+        statusAlert.innerHTML = '';
+      }
+      else {
+
+      }
+    });
+
+    ////////////////////////////////////////////////////////
+    var secretReset = document.getElementById("reset-after-post");
+    secretReset.addEventListener('click', function() {
+        resetForm();
+    });
+
     //////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////
-    // File IO
+    // Load/Save Records
     //
 
-    function jsonToFilename(json) {
-        var venue = json.ephemeralRecord.shows[0].venue;
-        var date = json.ephemeralRecord.shows[0].date;
-        var title = json.ephemeralRecord.shows[0].performances[0].title;
-        var cataloger = json.ephemeralRecord.dataCataloger;
-        var elements = [date, venue, title, cataloger];
-        var tojoin = [];
-
+    /*function getFormContent() {
+        var elements = document.querySelectorAll('.main-form-input');
+        var out = {};
         for (var i = 0; i < elements.length; i++) {
-            if (elements[i] !== '') {
-                tojoin.push(elements[i]);
+            var value = elements[i].type === 'checkbox' ? elements[i].checked :
+                                                            elements[i].value;
+            if(value !== "") {
+                assignKey(out, elements[i].id, value);
             }
         }
+        console.log(JSON.stringify(out));
+        return out;
+    }*/
 
-        var filename = toId(tojoin.join(' '));
-        filename = filename === '' ? 'empty-record.json' : filename + '.json';
-        return filename;
-    }
-
-    // Add event listeners to static UI elements.
+    // SAVE TO DB
     var submitButton = document.getElementById('playbill-submit');
     submitButton.addEventListener('click', function() {
+        var elements = document.querySelectorAll('.main-form-input');
+        var out = {};
+        for (var i = 0; i < elements.length; i++) {
+            var value = elements[i].type === 'checkbox' ? elements[i].checked :
+                                                            elements[i].value;
+            if(value !== "") {
+                assignKey(out, elements[i].id, value);
+            }
+        }
+        //var out = getFormContent();
+        var jsonOut = JSON.stringify(out);
+        var userid = localStorage.getItem("userid");
+        var skey = localStorage.getItem("key");
+
+        hash = hmac_hash(jsonOut.toString(), skey);
+        var patchid = document.getElementById('playbill-id').value;
+
+        var loadFileChooser = document.getElementById('local-load');
+        if(patchid === '') {
+            post_new_document(userid, hash, 'ephemeralRecord', jsonOut.toString());
+            loadFileChooser.value='';
+
+        }
+        else{
+            patch_existing_document(userid, hash, 'ephemeralRecord', patchid, jsonOut.toString());
+            loadFileChooser.value= '';
+        }
+    });
+
+    // SAVE TO FILE
+    var saveButton = document.getElementById('playbill-save');
+    saveButton.addEventListener('click', function() {
         var elements = document.querySelectorAll('.main-form-input');
         var out = {};
         for (var i = 0; i < elements.length; i++) {
@@ -442,8 +418,12 @@ document.addEventListener('DOMContentLoaded', function main() {
             assignKey(out, elements[i].id, value);
         }
 
-        console.log(out);
+        //console.log(out);
         var filename = jsonToFilename(out);
+
+        //var out = getFormContent();
+        //console.log(JSON.stringify(out));
+        //var filename = jsonToFilename(out);
 
         var dl = document.createElement('a');
         dl.setAttribute('href', 'data:text/plain;charset=utf-8,' +
@@ -459,9 +439,70 @@ document.addEventListener('DOMContentLoaded', function main() {
         return false;
     });
 
-    var loadFileChooser = document.getElementById('playbill-load');
+    // callback function for walkObj
+    function walkObjHelper () {
+        return function (val, keyPath) {
+            keyPath = keyPath.slice();    // Mutating data, so make a copy.
+            for (var i = 0; i < keyPath.length; i++) {
+                if ((typeof keyPath[i]) === 'number') {
+                    keyPath[i] += 1;
+                }
+            }
+
+            var fieldId = listToId(keyPath);
+            var tail = keyPath.pop();
+
+            // Is the last value in keyPath a number? If so, this is
+            // an array field. Check to see whether the corresponding
+            // form fields have been created yet and create them if not.
+            if ((typeof tail) === 'number') {
+                var renderId = listToId(keyPath);
+
+                if (document.getElementById(fieldId) === null) {
+                    var render = subFormFactory
+                        .getRendererFromKey[renderId];
+                    if (render) {
+                        render();
+                    }
+                }
+            }
+        };
+    }
+
+    // LOAD BY ID
+    var loadRecord = document.getElementById('playbill-load');
+    loadRecord.addEventListener('click', function() {
+
+        var pid = (window.location.hash.substr(1) !== '') ? window.location.hash.substr(1) : document.getElementById('playbill-id').value;
+
+        // Prepare the form for re-rendering.
+        resetForm();
+
+        var doc = get_document_by_id(pid);
+        var obj = JSON.parse(doc);
+
+        walkObj(obj, walkObjHelper());
+
+        var elements = document.querySelectorAll('.main-form-input');
+        for (var i = 0; i < elements.length; i++) {
+            var key = elements[i].id;
+            var value = getKey(obj, key);
+                if (elements[i].type === 'checkbox') {
+                    elements[i].checked = value;
+                } else if (value !== undefined) {
+                    elements[i].value = value;
+                }
+        }
+
+        focusTop();
+    });
+
+    // LOAD FROM LOCAL JSON FILE
+    var loadFileChooser = document.getElementById('local-load');
+
     loadFileChooser.addEventListener('change', function(evt) {
-        var file = evt.target.files[0];
+        var files = evt.target.files;
+        var file = files[0];
         var reader = new FileReader();
 
         // Prepare the form for re-rendering.
@@ -470,33 +511,7 @@ document.addEventListener('DOMContentLoaded', function main() {
         reader.addEventListener('load', function(evt) {
             obj = JSON.parse(evt.target.result);
 
-            walkObj(obj, function(val, keyPath) {
-                keyPath = keyPath.slice();  // Mutating data, so make a copy.
-                for (var i = 0; i < keyPath.length; i++) {
-                    if ((typeof keyPath[i]) === 'number') {
-                        keyPath[i] += 1;
-                    }
-                }
-
-                var fieldId = listToId(keyPath);
-                var tail = keyPath.pop();
-
-                // Is the last value in keyPath a number? If so, this is
-                // an array field. Check to see whether the corresponding
-                // form fields have been created yet and create them if not.
-                if ((typeof tail) === 'number') {
-                    var renderId = listToId(keyPath);
-
-                    if (document.getElementById(fieldId) === null) {
-                        var render = subFormFactory
-                            .getRendererFromKey[renderId];
-                        if (render) {
-                            render();
-                        }
-                    }
-                }
-            });
-
+            walkObj(obj, walkObjHelper());
             var elements = document.querySelectorAll('.main-form-input');
             for (var i = 0; i < elements.length; i++) {
                 var key = elements[i].id;
@@ -508,11 +523,15 @@ document.addEventListener('DOMContentLoaded', function main() {
                     elements[i].value = value;
                 }
             }
-        focusTop();
+            focusTop();
         });
         reader.readAsText(file);
     });
 
-    // Finally...
     resetForm();
+
+    if (window.location.hash.substr(1) !== '') {
+        document.getElementById('playbill-load').click();
+    }
+
 });

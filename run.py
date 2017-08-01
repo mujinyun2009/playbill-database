@@ -9,42 +9,34 @@ import base64
 import logging
 import json
 from schema import schema
+from flask.views import View
+
 
 class MyValidator(Validator):
     def _validate_documentation(self, documentation, field, value):
         if documentation:
             return
+
     def _validate_formType(self, formType, field, value):
         if formType:
             return
 
-## HMAC Auth ###
+# HMAC Auth
 class HMACAuth(HMACAuth):
-     def check_auth(self, userid, hmac_hash, headers, data, allowed_roles,
-                   resource, method):
-         # use Eve's own db driver; no additional connections/resources are
-         # used
-         accounts = app.data.driver.db['accounts']
-         lookup = {'userid': userid}
-         user = accounts.find_one(lookup) #should be userid or id?
-         if allowed_roles:
+    def check_auth(self, userid, hmac_hash, headers, data, allowed_roles,
+        resource, method):
+        # use Eve's own db driver; no additional connections/resources are
+        # used
+        accounts = app.data.driver.db['accounts']
+        lookup = {'userid': userid}
+        user = accounts.find_one(lookup)  # should be userid or id?
+        if allowed_roles:
             # only retrieve a user if his roles match ``allowed_roles``
             lookup['roles'] = {'$in': allowed_roles}
-         if user:
-             secret_key = user['secret_key']
-         # in this implementation we only hash request data, ignoring the
-         # headers.
-         #validator = hmac.new(str(secret_key).encode('utf-8'), None, sha1)
-         #validator.update(str(data).encode('utf-8'))
-         #print(secret_key)
-         #print(str(secret_key).encode('utf-8'))
-         #print(data)
-         #print(str(data).encode('utf-8'))
-         #print(hmac.new(str(secret_key).encode('utf-8'), str(data).encode('utf-8'), sha1).hexdigest())
-         #print(validator.hexdigest())
-         #print(hmac_hash)
+        if user:
+            secret_key = user['secret_key']
 
-         return user and  hmac.new(str(secret_key).encode('utf-8'), data, sha1).hexdigest() == hmac_hash
+        return user and hmac.new(str(secret_key).encode('utf-8'), data, sha1).hexdigest() == hmac_hash
 
 
 def create_user(documents):
@@ -76,27 +68,29 @@ def log_every_delete(resource, request, payload):
     # custom INFO-level message is sent to the log file
     app.logger.info('We just answered to a DELETE request!')
 
-
-
-#app = Eve(auth=HMACAuth)
 app = Eve(__name__, auth=HMACAuth, template_folder='templates', validator=MyValidator)
-#app.on_insert_accounts += create_user
-#app.on_post_GET += log_every_get
-#app.on_post_POST += log_every_post
-#app.on_post_PATCH += log_every_patch
-#app.on_post_PUT += log_every_put
-#app.on_post_DELETE += log_every_delete
+# app.on_insert_accounts += create_user
+# app.on_post_GET += log_every_get
+# app.on_post_POST += log_every_post
+# app.on_post_PATCH += log_every_patch
+# app.on_post_PUT += log_every_put
+# app.on_post_DELETE += log_every_delete
 
-@app.route('/index')
+
+@app.route('/home')
 def index():
     return render_template('index.html')
 
-@app.route('/form')
-def something():
-    return render_template('form.html')
+@app.route('/login')
+def login():
+    return render_template('login.html')
 
-@app.route('/main')
-def main():
+@app.route('/login.js')
+def render_login_js():
+    return render_template('login.js')
+
+@app.route('/main.js')
+def render_main_js():
     return render_template('main.js')
 
 @app.route('/schema.json')
@@ -104,9 +98,22 @@ def render_schema_json():
     schema_json = json.dumps(schema)
     return render_template_string(schema_json)
 
-@app.route('/style')
-def style():
+@app.route('/style.css')
+def render_stylesheet():
     return app.send_static_file('style.css')
+
+@app.route('/search')
+def render_search_page():
+    return render_template('search.html')
+
+@app.route('/search.js')
+def render_search_js():
+    return render_template('search.js')
+
+@app.route('/functions.js')
+def render_functions_js():
+    return render_template('functions.js')
+
 
 
 if __name__ == '__main__':
@@ -126,5 +133,4 @@ if __name__ == '__main__':
     # append the handler to the default application logger
     app.logger.addHandler(handler)
 
-    # app.run(debug=True, host="0.0.0.0")
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", threaded=True)
